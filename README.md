@@ -5,6 +5,59 @@
 
 ---
 
+## The Application
+
+A Flask app that puts a brand-intelligence UI on top of the Hyperspell memory layer.
+It's a single service — the frontend (server-rendered UI) and the backend (JSON API)
+are the same app at the same origin.
+
+- **Live demo:** https://hyperspellpharmapoc.vercel.app (open demo mode — no login)
+- **Frontend (UI):** `/`
+- **Backend (API):** `/query`, `/global-query`, `/upload`, `/brands`, `/me`
+
+**Features**
+- Per-brand Q&A with **numbered citations** + relevance-score bars (grounded in the memory layer)
+- **🌐 Global chat** — ask across all brands at once (no brand filter)
+- **⬆ Document upload** — push new docs into a brand's memory layer (file or pasted text)
+- **Keycloak OIDC auth** with admin/viewer roles (bypassable via `DEMO_MODE`)
+- **Langfuse** tracing on every query/ingest
+
+---
+
+## Running Locally
+
+```bash
+# 1. Clone
+git clone https://github.com/apurva-ship-it/hyperspell-pharma-poc.git
+cd hyperspell-pharma-poc
+
+# 2. Create your .env (it is gitignored — never committed)
+cp .env.example .env
+#    then edit .env and fill in at least HYPERSPELL_API_KEY and FLASK_SECRET_KEY
+#    generate a secret: python3 -c "import secrets; print(secrets.token_urlsafe(48))"
+
+# 3. Install dependencies
+pip3 install -r requirements.txt
+
+# 4. Start Keycloak (auth) in Docker
+docker-compose up -d          # Keycloak on http://localhost:8080 (realm: pharma-poc)
+
+# 5. Run the app
+python3 app.py                # → http://localhost:5001
+```
+
+**Shortcut — skip Keycloak entirely** (same demo mode as the live site, auto-login as admin):
+
+```bash
+DEMO_MODE=1 python3 app.py    # → http://localhost:5001
+```
+
+> **Note:** there is **no Anthropic/OpenAI key** in this project — answer generation is
+> handled server-side by Hyperspell via the `answer=True` flag. The only AI credential
+> is `HYPERSPELL_API_KEY`. See `DEPLOY.md` for hosting on Vercel.
+
+---
+
 ## Documents Included
 
 | File | Document Type | Key Content |

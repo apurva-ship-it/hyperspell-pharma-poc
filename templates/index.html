@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pharma Brand Intelligence</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0e18;
+      --surface: #131726;
+      --surface2: #1a2035;
+      --border: #232b3e;
+      --border2: #2d3852;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --subtle: #94a3b8;
+      --accent: #6366f1;
+      --accent2: #8b5cf6;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      background: rgba(11,14,24,.92);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+    .logo-pill {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ingest-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--subtle);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .ingest-btn:hover { border-color: var(--accent); color: #a5b4fc; }
+
+    /* ── User badge / logout ── */
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--subtle);
+    }
+    .user-badge .user-name { color: var(--text); font-weight: 500; }
+    .user-badge .role-pill {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .role-pill.role-admin {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .role-pill.role-viewer {
+      background: var(--surface2);
+      color: var(--subtle);
+      border: 1px solid var(--border);
+    }
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--subtle);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .logout-btn:hover { border-color: #f87171; color: #f87171; }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Sidebar ── */
+    aside {
+      width: 240px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      overflow-y: auto;
+    }
+    .aside-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 16px 10px;
+    }
+    .brand-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .brand-item:hover { background: var(--surface); }
+    .brand-item.active {
+      border-left-color: var(--accent);
+      background: var(--surface);
+    }
+    .brand-item .brand-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .brand-item .brand-ta {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .brand-item .brand-co {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .brand-item.active .brand-name { color: #a5b4fc; }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .brand-header {
+      padding: 24px 32px 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+    .brand-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a5b4fc, #e879f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    .brand-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .brand-meta span::before { content: '· '; }
+    .brand-meta span:first-child::before { content: ''; }
+
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px;
+    }
+
+    /* ── Search ── */
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .search-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 13px 18px;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-row input::placeholder { color: var(--muted); }
+    .search-row input:focus { border-color: var(--accent); }
+    .search-row button {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 10px;
+      padding: 0 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: opacity .2s;
+      white-space: nowrap;
+    }
+    .search-row button:hover { opacity: .85; }
+    .search-row button:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Chips ── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--subtle);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .chip:hover { border-color: var(--accent); color: #a5b4fc; background: #1e2240; }
+
+    /* ── Answer ── */
+    #result { display: none; }
+
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 26px 28px;
+      margin-bottom: 16px;
+    }
+    .answer-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .answer-label::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .query-echo {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .query-echo strong { color: var(--subtle); }
+    .answer-text {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .sources-section { margin-top: 12px; }
+    .sources-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .source-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .source-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .source-chip::before { content: '📄'; font-size: 11px; }
+
+    /* ── Loading / Error ── */
+    .loading-text {
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 36px 0;
+    }
+    .spinner {
+      display: inline-block;
+      width: 15px; height: 15px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-card {
+      background: #1a0f14;
+      border: 1px solid #4c1d2a;
+      border-radius: 12px;
+      padding: 18px 22px;
+      color: #f87171;
+      font-size: 14px;
+    }
+
+    /* ── Ingest modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 28px 32px;
+      width: 480px;
+      max-width: 90vw;
+    }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .modal-brands { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+    .modal-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .modal-brand-row:hover { border-color: var(--accent); }
+    .modal-brand-row input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+    .modal-brand-row label { font-size: 13px; cursor: pointer; flex: 1; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-actions button {
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s;
+    }
+    .btn-cancel { background: var(--surface2); color: var(--subtle); border: 1px solid var(--border) !important; }
+    .btn-ingest { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-ingest:disabled { opacity: .4; cursor: not-allowed; }
+    .ingest-log {
+      background: #080a12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #7dd3fc;
+      max-height: 140px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ── Global nav item ── */
+    .global-item {
+      border-left: 3px solid transparent;
+      margin-bottom: 6px;
+    }
+    .global-item.active {
+      border-left-color: var(--accent2);
+      background: var(--surface);
+    }
+    .global-item.active .brand-name { color: #e879f9; }
+
+    /* ── Numbered references / citations ── */
+    .references {
+      margin-top: 18px;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+    .references-head {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .references-head .ref-count {
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #475569;
+      margin-left: 6px;
+    }
+    .ref-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .ref-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      transition: border-color .15s, background .15s;
+    }
+    .ref-num {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ref-title { color: var(--text); }
+    .ref-title::before { content: '📄 '; }
+    .ref-brand {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #a5b4fc;
+      background: #1e2240;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 2px 8px;
+    }
+    .ref-spacer { flex: 1; }
+    .ref-score {
+      flex-shrink: 0;
+      width: 70px; height: 6px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .ref-score i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .ref-pct { flex-shrink: 0; font-size: 11px; color: var(--subtle); width: 34px; text-align: right; }
+    .ref-flash { border-color: var(--accent2) !important; background: #1e2240 !important; }
+
+    /* ── Inline citation markers ── */
+    .inline-cites { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: super; }
+    .cite-mark {
+      font-size: 10px;
+      font-weight: 700;
+      color: #a5b4fc;
+      background: #1e2240;
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      padding: 1px 6px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .cite-mark:hover { background: var(--accent); color: #fff; }
+
+    /* ── Global chat transcript ── */
+    #chatScroll { display: none; flex-direction: column; gap: 16px; }
+    .bubble { display: flex; flex-direction: column; max-width: 90%; }
+    .bubble.user { align-self: flex-end; align-items: flex-end; }
+    .bubble.bot { align-self: flex-start; }
+    .bubble-body {
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 14.5px;
+      line-height: 1.7;
+    }
+    .bubble.user .bubble-body {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.bot .bubble-body {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+      width: 100%;
+    }
+    .bubble.bot .answer-text { white-space: pre-wrap; }
+    .err-inline { color: #f87171; }
+    .brands-hit { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .hit-pill {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #5eead4;
+      background: #0c2925;
+      border: 1px solid #134e4a;
+      border-radius: 10px;
+      padding: 2px 8px;
+    }
+
+    /* ── Upload modal fields ── */
+    .upload-field { margin-bottom: 14px; }
+    .upload-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-bottom: 6px;
+    }
+    .upload-field label .opt { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .upload-input, .upload-select, .upload-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+    }
+    .upload-input:focus, .upload-select:focus, .upload-textarea:focus { border-color: var(--accent); }
+    .upload-textarea { min-height: 90px; resize: vertical; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-pill">Hyperspell</div>
+  <h1>Pharma Brand Intelligence</h1>
+  <div class="header-right">
+    {% set is_admin = user and 'admin' in user.roles %}
+    <span class="user-badge">
+      <span class="user-name">{{ user.name or user.email }}</span>
+      <span class="role-pill role-{{ 'admin' if is_admin else 'viewer' }}">{{ 'admin' if is_admin else 'viewer' }}</span>
+    </span>
+    {% if is_admin %}
+    <button class="ingest-btn" onclick="openUploadModal()">⬆ Upload Doc</button>
+    <button class="ingest-btn" onclick="openIngestModal()">+ Ingest Brands</button>
+    {% endif %}
+    <a href="/logout" class="logout-btn">Logout</a>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside>
+    <div class="aside-label">Ask</div>
+    <div class="brand-item global-item" id="nav-global" onclick="selectGlobal()">
+      <div class="brand-name">🌐 Ask Across All Brands</div>
+      <div class="brand-ta">Portfolio-wide chat</div>
+    </div>
+    <div class="aside-label" style="margin-top:16px">Brands</div>
+    <div id="brandList"></div>
+  </aside>
+
+  <!-- Main -->
+  <main>
+    <div class="brand-header">
+      <h2 id="brandTitle">Select a brand</h2>
+      <div class="brand-meta">
+        <span id="brandTA"></span>
+        <span id="brandCo"></span>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="search-row">
+        <input id="queryInput" type="text" placeholder="Ask anything about this brand…" />
+        <button id="askBtn" onclick="ask()">Ask</button>
+      </div>
+
+      <div class="chips" id="chipArea"></div>
+      <div id="chatScroll"></div>
+      <div id="result"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <h3>Upload Document</h3>
+    <p>Add a document to a brand's memory layer. Attach a file (.md, .txt, .csv, .json) or paste text — it becomes queryable after processing.</p>
+    <div class="upload-field">
+      <label>Brand</label>
+      <select id="uploadBrand" class="upload-select"></select>
+    </div>
+    <div class="upload-field">
+      <label>Title <span class="opt">— optional, defaults to filename</span></label>
+      <input id="uploadTitle" class="upload-input" placeholder="e.g. Nexorel Q3 2026 Launch Addendum" />
+    </div>
+    <div class="upload-field">
+      <label>File <span class="opt">— optional if pasting below</span></label>
+      <input type="file" id="uploadFile" accept=".md,.markdown,.txt,.text,.csv,.json" class="upload-input" />
+    </div>
+    <div class="upload-field">
+      <label>…or paste text</label>
+      <textarea id="uploadText" class="upload-textarea" placeholder="Paste document content here…"></textarea>
+    </div>
+    <div class="ingest-log" id="uploadLog"></div>
+    <div class="modal-actions">
+      <button class="modal-actions btn-cancel" onclick="closeUploadModal()">Cancel</button>
+      <button class="btn-ingest" id="uploadBtn" onclick="runUpload()">Upload to Memory</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ingest Modal -->
+<div class="modal-overlay" id="ingestModal">
+  <div class="modal">
+    <h3>Ingest Brand Documents</h3>
+    <p>Select brands to upload into your Hyperspell memory layer.</p>
+    <div class="modal-brands" id="modalBrandList"></div>
+    <div class="ingest-log" id="ingestLog"></div>
+    <div class="modal-actions">
+      <button class="modal-actions btn-cancel" onclick="closeIngestModal()">Cancel</button>
+      <button class="btn-ingest" id="ingestBtn" onclick="runIngest()">Ingest Selected</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let brands = {};
+  let activeBrand = null;
+  let mode = 'brand';        // 'brand' | 'global'
+  let chatMsgCount = 0;
+
+  // Load brands on startup
+  fetch('/brands').then(r => r.json()).then(data => {
+    brands = data;
+    renderSidebar();
+    // Auto-select first brand
+    selectBrand(Object.keys(data)[0]);
+  });
+
+  function renderSidebar() {
+    const list = document.getElementById('brandList');
+    list.innerHTML = '';
+    for (const [key, b] of Object.entries(brands)) {
+      const div = document.createElement('div');
+      div.className = 'brand-item';
+      div.id = `brand-${key}`;
+      div.onclick = () => selectBrand(key);
+      div.innerHTML = `
+        <div class="brand-name">${b.label.split(' (')[0]}</div>
+        <div class="brand-ta">${b.ta}</div>
+        <div class="brand-co">${b.company}</div>
+      `;
+      list.appendChild(div);
+    }
+  }
+
+  function loadChips(key) {
+    fetch(`/sample-questions/${key}`)
+      .then(r => r.json())
+      .then(questions => {
+        const area = document.getElementById('chipArea');
+        area.innerHTML = '';
+        questions.forEach(q => {
+          const chip = document.createElement('div');
+          chip.className = 'chip';
+          chip.textContent = q;
+          chip.addEventListener('click', () => prefill(q));
+          area.appendChild(chip);
+        });
+      });
+  }
+
+  function selectBrand(key) {
+    mode = 'brand';
+    document.getElementById('nav-global').classList.remove('active');
+    if (activeBrand) {
+      document.getElementById(`brand-${activeBrand}`)?.classList.remove('active');
+    }
+    activeBrand = key;
+    document.getElementById(`brand-${key}`)?.classList.add('active');
+
+    const b = brands[key];
+    document.getElementById('brandTitle').textContent = b.label;
+    document.getElementById('brandTA').textContent = b.ta;
+    document.getElementById('brandCo').textContent = b.company;
+
+    document.getElementById('chatScroll').style.display = 'none';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('queryInput').value = '';
+    document.getElementById('queryInput').placeholder = `Ask anything about ${b.label.split(' (')[0]}…`;
+
+    loadChips(key);
+  }
+
+  function selectGlobal() {
+    mode = 'global';
+    if (activeBrand) {
+      document.getElementById(`brand-${activeBrand}`)?.classList.remove('active');
+      activeBrand = null;
+    }
+    document.getElementById('nav-global').classList.add('active');
+
+    document.getElementById('brandTitle').textContent = 'Portfolio Intelligence';
+    document.getElementById('brandTA').textContent = `Cross-brand chat · ${Object.keys(brands).length} brands`;
+    document.getElementById('brandCo').textContent = 'Searches the entire memory layer — no brand filter';
+
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('chatScroll').style.display = 'flex';
+    document.getElementById('queryInput').value = '';
+    document.getElementById('queryInput').placeholder = 'Ask across all brands…';
+
+    loadChips('global');
+  }
+
+  document.getElementById('queryInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') ask();
+  });
+
+  function prefill(q) {
+    document.getElementById('queryInput').value = q;
+    ask();
+  }
+
+  // ── Citation rendering (shared by brand answers and global chat) ──
+  function citationsHtml(citations, documentCount, opts = {}) {
+    if (!citations || !citations.length) return '';
+    const items = citations.map((c, i) => {
+      const pct = (c.score != null) ? Math.round(c.score * 100) : null;
+      const brandTag = (opts.showBrand && c.brand) ? `<span class="ref-brand">${esc(c.brand)}</span>` : '';
+      const score = (pct != null)
+        ? `<span class="ref-score" title="relevance ${pct}%"><i style="width:${pct}%"></i></span><span class="ref-pct">${pct}%</span>`
+        : '';
+      return `<li class="ref-item" id="${opts.idPrefix}-${i + 1}">
+        <span class="ref-num">${i + 1}</span>
+        <span class="ref-title">${esc(c.title)}</span>
+        ${brandTag}
+        <span class="ref-spacer"></span>
+        ${score}
+      </li>`;
+    }).join('');
+    return `<div class="references">
+      <div class="references-head">References<span class="ref-count">grounded in ${documentCount} retrieved chunks · ${citations.length} source docs</span></div>
+      <ol class="ref-list">${items}</ol>
+    </div>`;
+  }
+
+  function inlineCitesHtml(citations, idPrefix) {
+    if (!citations || !citations.length) return '';
+    const n = Math.min(citations.length, 4);
+    let out = '<span class="inline-cites">';
+    for (let i = 0; i < n; i++) {
+      out += `<a class="cite-mark" onclick="flashRef('${idPrefix}-${i + 1}')">${i + 1}</a>`;
+    }
+    return out + '</span>';
+  }
+
+  function flashRef(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ref-flash');
+    setTimeout(() => el.classList.remove('ref-flash'), 1200);
+  }
+
+  // ── Dispatcher ──
+  function ask() {
+    const q = document.getElementById('queryInput').value.trim();
+    if (!q) return;
+    if (mode === 'global') {
+      document.getElementById('queryInput').value = '';
+      askGlobal(q);
+    } else {
+      askBrand(q);
+    }
+  }
+
+  async function askBrand(q) {
+    if (!activeBrand) return;
+    const btn = document.getElementById('askBtn');
+    const resultDiv = document.getElementById('result');
+    btn.disabled = true;
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div class="loading-text"><span class="spinner"></span>Searching memory layer…</div>`;
+
+    try {
+      const res = await fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, brand: activeBrand })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        resultDiv.innerHTML = `<div class="error-card">Error: ${esc(data.error)}</div>`;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="answer-card">
+            <div class="query-echo">You asked: <strong>${esc(q)}</strong></div>
+            <div class="answer-label">Answer</div>
+            <div class="answer-text">${esc(data.answer)}${inlineCitesHtml(data.citations, 'bref')}</div>
+            ${citationsHtml(data.citations, data.document_count, { idPrefix: 'bref' })}
+          </div>
+        `;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<div class="error-card">Network error: ${esc(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function askGlobal(q) {
+    const scroll = document.getElementById('chatScroll');
+    const idx = ++chatMsgCount;
+    const loadingId = `g-loading-${idx}`;
+    scroll.insertAdjacentHTML('beforeend',
+      `<div class="bubble user"><div class="bubble-body">${esc(q)}</div></div>`);
+    scroll.insertAdjacentHTML('beforeend',
+      `<div class="bubble bot" id="${loadingId}"><div class="bubble-body"><span class="spinner"></span>Searching across all brands…</div></div>`);
+    scroll.scrollTop = scroll.scrollHeight;
+
+    try {
+      const res = await fetch('/global-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      const body = document.getElementById(loadingId).querySelector('.bubble-body');
+
+      if (data.error) {
+        body.innerHTML = `<span class="err-inline">Error: ${esc(data.error)}</span>`;
+      } else {
+        const idp = `gref${idx}`;
+        const hits = (data.brands_hit || []).length
+          ? `<div class="brands-hit">${data.brands_hit.map(b => `<span class="hit-pill">${esc(b)}</span>`).join('')}</div>`
+          : '';
+        body.innerHTML = `
+          <div class="answer-text">${esc(data.answer)}${inlineCitesHtml(data.citations, idp)}</div>
+          ${hits}
+          ${citationsHtml(data.citations, data.document_count, { idPrefix: idp, showBrand: true })}
+        `;
+      }
+    } catch (err) {
+      document.getElementById(loadingId).querySelector('.bubble-body').innerHTML =
+        `<span class="err-inline">Network error: ${esc(err.message)}</span>`;
+    }
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  // ── Ingest Modal ──
+  function openIngestModal() {
+    const list = document.getElementById('modalBrandList');
+    list.innerHTML = '';
+    for (const [key, b] of Object.entries(brands)) {
+      const row = document.createElement('div');
+      row.className = 'modal-brand-row';
+      row.innerHTML = `
+        <input type="checkbox" id="chk-${key}" value="${key}" checked />
+        <label for="chk-${key}">${b.label} <span style="color:var(--muted);font-size:11px">· ${b.company}</span></label>
+      `;
+      list.appendChild(row);
+    }
+    document.getElementById('ingestLog').style.display = 'none';
+    document.getElementById('ingestLog').textContent = '';
+    document.getElementById('ingestBtn').disabled = false;
+    document.getElementById('ingestModal').classList.add('open');
+  }
+
+  function closeIngestModal() {
+    document.getElementById('ingestModal').classList.remove('open');
+  }
+
+  async function runIngest() {
+    const checked = [...document.querySelectorAll('#modalBrandList input:checked')].map(i => i.value);
+    if (!checked.length) return;
+
+    const btn = document.getElementById('ingestBtn');
+    const log = document.getElementById('ingestLog');
+    btn.disabled = true;
+    log.style.display = 'block';
+    log.textContent = `Ingesting ${checked.length} brand(s)…\n`;
+
+    for (const brand of checked) {
+      log.textContent += `→ ${brands[brand].label}… `;
+      try {
+        const res = await fetch('/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand })
+        });
+        const data = await res.json();
+        if (data.error) {
+          log.textContent += `ERROR: ${data.error}\n`;
+        } else {
+          log.textContent += `✓ ${data.count} doc(s) queued\n`;
+        }
+      } catch (e) {
+        log.textContent += `FAILED: ${e.message}\n`;
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+
+    log.textContent += '\nDone. Docs are processing in Hyperspell (~10s).';
+    btn.disabled = false;
+  }
+
+  // ── Upload Modal ──
+  function openUploadModal() {
+    const sel = document.getElementById('uploadBrand');
+    sel.innerHTML = Object.entries(brands)
+      .map(([k, b]) => `<option value="${k}" ${k === activeBrand ? 'selected' : ''}>${b.label}</option>`)
+      .join('');
+    document.getElementById('uploadTitle').value = '';
+    document.getElementById('uploadFile').value = '';
+    document.getElementById('uploadText').value = '';
+    const log = document.getElementById('uploadLog');
+    log.style.display = 'none';
+    log.textContent = '';
+    document.getElementById('uploadBtn').disabled = false;
+    document.getElementById('uploadModal').classList.add('open');
+  }
+
+  function closeUploadModal() {
+    document.getElementById('uploadModal').classList.remove('open');
+  }
+
+  async function runUpload() {
+    const brand = document.getElementById('uploadBrand').value;
+    const title = document.getElementById('uploadTitle').value.trim();
+    const fileEl = document.getElementById('uploadFile');
+    const text = document.getElementById('uploadText').value.trim();
+
+    if (!fileEl.files.length && !text) {
+      alert('Attach a file or paste some text first.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('brand', brand);
+    if (title) fd.append('title', title);
+    if (fileEl.files.length) fd.append('file', fileEl.files[0]);
+    if (text) fd.append('text', text);
+
+    const btn = document.getElementById('uploadBtn');
+    const log = document.getElementById('uploadLog');
+    btn.disabled = true;
+    log.style.display = 'block';
+    log.textContent = 'Uploading to memory layer…\n';
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) {
+        log.textContent += `ERROR: ${data.error}\n`;
+      } else {
+        log.textContent += `✓ "${data.title}" added to ${brands[brand].label} (${data.count} doc queued)\n\n`;
+        log.textContent += 'Processing in Hyperspell (~10s), then queryable in this brand and global chat.';
+      }
+    } catch (e) {
+      log.textContent += `FAILED: ${e.message}\n`;
+    }
+    btn.disabled = false;
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

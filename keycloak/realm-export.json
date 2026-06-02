@@ -1,0 +1,76 @@
+{
+  "realm": "pharma-poc",
+  "displayName": "Pharma Brand Intelligence POC",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {"name": "admin", "description": "Full access including ingest"},
+      {"name": "viewer", "description": "Query-only access"}
+    ]
+  },
+  "users": [
+    {
+      "username": "apurva@devkraft.in",
+      "email": "apurva@devkraft.in",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Apurva",
+      "lastName": "DevKraft",
+      "credentials": [{"type": "password", "value": "DevKraft", "temporary": false}],
+      "realmRoles": ["admin", "viewer"]
+    },
+    {
+      "username": "bio.marin@devkraft.in",
+      "email": "bio.marin@devkraft.in",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "BioMarin",
+      "lastName": "Viewer",
+      "credentials": [{"type": "password", "value": "DevKraft", "temporary": false}],
+      "realmRoles": ["viewer"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "flask-app",
+      "name": "Pharma POC Flask App",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "flask-app-secret-change-me",
+      "redirectUris": ["http://localhost:5001/auth/callback", "https://*.vercel.app/auth/callback"],
+      "webOrigins": ["http://localhost:5001", "https://*.vercel.app"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -508,8 +508,49 @@
     }
     .cite-mark:hover { background: var(--accent); color: #fff; }
 
+    /* ── Global chat toolbar ── */
+    .global-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .global-bar.show { display: flex; }
+    .global-bar .gb-left { font-size: 12px; color: var(--muted); }
+    .global-bar .gb-actions { display: flex; gap: 8px; }
+    .chat-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--subtle);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .chat-btn:hover { border-color: var(--accent); color: #a5b4fc; }
+    .chat-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .chat-btn.danger:hover { border-color: #f87171; color: #f87171; }
+
     /* ── Global chat transcript ── */
-    #chatScroll { display: none; flex-direction: column; gap: 16px; }
+    #chatScroll {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      max-height: calc(100vh - 340px);
+      min-height: 180px;
+      overflow-y: auto;
+      padding-right: 6px;
+      scroll-behavior: smooth;
+    }
+    .chat-empty {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding: 48px 0;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
     .bubble { display: flex; flex-direction: column; max-width: 90%; }
     .bubble.user { align-self: flex-end; align-items: flex-end; }
     .bubble.bot { align-self: flex-start; }
@@ -571,6 +612,46 @@
     }
     .upload-input:focus, .upload-select:focus, .upload-textarea:focus { border-color: var(--accent); }
     .upload-textarea { min-height: 90px; resize: vertical; }
+
+    /* ── Chat history modal ── */
+    .modal.modal-wide { width: 640px; }
+    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; margin-bottom: 16px; }
+    .history-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 0; }
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .history-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .history-head:hover { background: var(--surface2); }
+    .history-title { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .history-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .history-del {
+      background: transparent; border: none; color: var(--muted);
+      cursor: pointer; font-size: 14px; padding: 0 4px;
+    }
+    .history-del:hover { color: #f87171; }
+    .history-body {
+      display: none;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      flex-direction: column;
+      gap: 12px;
+    }
+    .history-body.open { display: flex; }
+    .h-msg { font-size: 13px; line-height: 1.6; }
+    .h-msg .h-role { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 3px; }
+    .h-msg.h-user .h-text { color: #a5b4fc; }
+    .h-msg.h-bot .h-text { color: var(--text); white-space: pre-wrap; }
+    .h-msg .h-srcs { font-size: 11px; color: var(--muted); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -621,10 +702,30 @@
       </div>
 
       <div class="chips" id="chipArea"></div>
+      <div class="global-bar" id="globalBar">
+        <span class="gb-left" id="chatCount"></span>
+        <span class="gb-actions">
+          <button class="chat-btn" onclick="openHistoryModal()">🕘 History</button>
+          <button class="chat-btn danger" id="clearChatBtn" onclick="clearChat()">🗑 Clear chat</button>
+        </span>
+      </div>
       <div id="chatScroll"></div>
       <div id="result"></div>
     </div>
   </main>
+</div>
+
+<!-- Chat History Modal -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal modal-wide">
+    <h3>Chat History</h3>
+    <p>Past “Ask Across All Brands” conversations, newest first. Stored in your browser.</p>
+    <div class="history-list" id="historyList"></div>
+    <div class="modal-actions">
+      <button class="modal-actions btn-cancel" onclick="clearAllHistory()">Clear all history</button>
+      <button class="btn-ingest" onclick="closeHistoryModal()">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- Upload Modal -->
@@ -674,7 +775,6 @@
   let brands = {};
   let activeBrand = null;
   let mode = 'brand';        // 'brand' | 'global'
-  let chatMsgCount = 0;
 
   // Load brands on startup
   fetch('/brands').then(r => r.json()).then(data => {
@@ -732,6 +832,7 @@
     document.getElementById('brandCo').textContent = b.company;
 
     document.getElementById('chatScroll').style.display = 'none';
+    document.getElementById('globalBar').classList.remove('show');
     document.getElementById('result').style.display = 'none';
     document.getElementById('queryInput').value = '';
     document.getElementById('queryInput').placeholder = `Ask anything about ${b.label.split(' (')[0]}…`;
@@ -753,10 +854,12 @@
 
     document.getElementById('result').style.display = 'none';
     document.getElementById('chatScroll').style.display = 'flex';
+    document.getElementById('globalBar').classList.add('show');
     document.getElementById('queryInput').value = '';
     document.getElementById('queryInput').placeholder = 'Ask across all brands…';
 
     loadChips('global');
+    renderChat();
   }
 
   document.getElementById('queryInput').addEventListener('keydown', e => {
@@ -856,15 +959,54 @@
     }
   }
 
-  async function askGlobal(q) {
+  // currentChat: live conversation entries. Bot entry holds the structured response.
+  let currentChat = [];
+
+  function botBubbleInner(entry, idp) {
+    if (entry.loading) {
+      return `<span class="spinner"></span>Searching across all brands…`;
+    }
+    if (entry.error) {
+      return `<span class="err-inline">Error: ${esc(entry.error)}</span>`;
+    }
+    const hits = (entry.brands_hit || []).length
+      ? `<div class="brands-hit">${entry.brands_hit.map(b => `<span class="hit-pill">${esc(b)}</span>`).join('')}</div>`
+      : '';
+    return `
+      <div class="answer-text">${esc(entry.answer)}${inlineCitesHtml(entry.citations, idp)}</div>
+      ${hits}
+      ${citationsHtml(entry.citations, entry.document_count, { idPrefix: idp, showBrand: true })}
+    `;
+  }
+
+  function renderChat() {
     const scroll = document.getElementById('chatScroll');
-    const idx = ++chatMsgCount;
-    const loadingId = `g-loading-${idx}`;
-    scroll.insertAdjacentHTML('beforeend',
-      `<div class="bubble user"><div class="bubble-body">${esc(q)}</div></div>`);
-    scroll.insertAdjacentHTML('beforeend',
-      `<div class="bubble bot" id="${loadingId}"><div class="bubble-body"><span class="spinner"></span>Searching across all brands…</div></div>`);
+    if (!currentChat.length) {
+      scroll.innerHTML = `<div class="chat-empty">Ask anything across all ${Object.keys(brands).length} brands. Past conversations are saved to 🕘 History when you clear the chat.</div>`;
+    } else {
+      scroll.innerHTML = currentChat.map((m, i) => {
+        if (m.role === 'user') {
+          return `<div class="bubble user"><div class="bubble-body">${esc(m.text)}</div></div>`;
+        }
+        return `<div class="bubble bot"><div class="bubble-body">${botBubbleInner(m, 'gref' + i)}</div></div>`;
+      }).join('');
+    }
     scroll.scrollTop = scroll.scrollHeight;
+    updateChatBar();
+  }
+
+  function updateChatBar() {
+    const turns = currentChat.filter(m => m.role === 'user').length;
+    document.getElementById('chatCount').textContent =
+      turns ? `${turns} message${turns > 1 ? 's' : ''} in this chat` : 'New chat';
+    document.getElementById('clearChatBtn').disabled = currentChat.length === 0;
+  }
+
+  async function askGlobal(q) {
+    currentChat.push({ role: 'user', text: q });
+    const botEntry = { role: 'bot', loading: true };
+    currentChat.push(botEntry);
+    renderChat();
 
     try {
       const res = await fetch('/global-query', {
@@ -873,26 +1015,46 @@
         body: JSON.stringify({ question: q })
       });
       const data = await res.json();
-      const body = document.getElementById(loadingId).querySelector('.bubble-body');
-
+      delete botEntry.loading;
       if (data.error) {
-        body.innerHTML = `<span class="err-inline">Error: ${esc(data.error)}</span>`;
+        botEntry.error = data.error;
       } else {
-        const idp = `gref${idx}`;
-        const hits = (data.brands_hit || []).length
-          ? `<div class="brands-hit">${data.brands_hit.map(b => `<span class="hit-pill">${esc(b)}</span>`).join('')}</div>`
-          : '';
-        body.innerHTML = `
-          <div class="answer-text">${esc(data.answer)}${inlineCitesHtml(data.citations, idp)}</div>
-          ${hits}
-          ${citationsHtml(data.citations, data.document_count, { idPrefix: idp, showBrand: true })}
-        `;
+        botEntry.answer = data.answer;
+        botEntry.citations = data.citations;
+        botEntry.document_count = data.document_count;
+        botEntry.brands_hit = data.brands_hit;
       }
     } catch (err) {
-      document.getElementById(loadingId).querySelector('.bubble-body').innerHTML =
-        `<span class="err-inline">Network error: ${esc(err.message)}</span>`;
+      delete botEntry.loading;
+      botEntry.error = `Network error: ${err.message}`;
     }
-    scroll.scrollTop = scroll.scrollHeight;
+    renderChat();
+  }
+
+  // ── Clear chat → archive to history ──
+  const HISTORY_KEY = 'hyperspell_global_history';
+  let chatHistory = loadHistory();
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveHistory() {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch (e) {}
+  }
+
+  function clearChat() {
+    if (!currentChat.length) return;
+    const firstQ = (currentChat.find(m => m.role === 'user') || {}).text || 'Conversation';
+    chatHistory.unshift({
+      id: Date.now(),
+      time: new Date().toLocaleString(),
+      title: firstQ,
+      messages: currentChat
+    });
+    saveHistory();
+    currentChat = [];
+    renderChat();
   }
 
   // ── Ingest Modal ──
@@ -1008,6 +1170,60 @@
       log.textContent += `FAILED: ${e.message}\n`;
     }
     btn.disabled = false;
+  }
+
+  // ── History modal ──
+  function openHistoryModal() {
+    renderHistoryList();
+    document.getElementById('historyModal').classList.add('open');
+  }
+  function closeHistoryModal() {
+    document.getElementById('historyModal').classList.remove('open');
+  }
+
+  function renderHistoryList() {
+    const list = document.getElementById('historyList');
+    if (!chatHistory.length) {
+      list.innerHTML = `<div class="history-empty">No past conversations yet. Use 🗑 Clear chat to archive one here.</div>`;
+      return;
+    }
+    list.innerHTML = chatHistory.map(s => {
+      const turns = s.messages.filter(m => m.role === 'user').length;
+      const body = s.messages.map((m, i) => {
+        if (m.role === 'user') {
+          return `<div class="h-msg h-user"><span class="h-role">You</span><span class="h-text">${esc(m.text)}</span></div>`;
+        }
+        const srcs = (m.citations || []).map(c => c.title);
+        const srcLine = srcs.length ? `<div class="h-srcs">📄 ${esc(srcs.slice(0, 4).join(' · '))}</div>` : '';
+        const txt = m.error ? `<span class="err-inline">${esc(m.error)}</span>` : esc(m.answer || '');
+        return `<div class="h-msg h-bot"><span class="h-role">Answer</span><span class="h-text">${txt}</span>${srcLine}</div>`;
+      }).join('');
+      return `
+        <div class="history-item">
+          <div class="history-head" onclick="toggleHistory(${s.id})">
+            <span class="history-title">${esc(s.title)}</span>
+            <span class="history-meta">${turns} msg · ${esc(s.time)}</span>
+            <button class="history-del" title="Delete" onclick="event.stopPropagation();deleteHistory(${s.id})">✕</button>
+          </div>
+          <div class="history-body" id="hbody-${s.id}">${body}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleHistory(id) {
+    document.getElementById(`hbody-${id}`)?.classList.toggle('open');
+  }
+  function deleteHistory(id) {
+    chatHistory = chatHistory.filter(s => s.id !== id);
+    saveHistory();
+    renderHistoryList();
+  }
+  function clearAllHistory() {
+    if (!chatHistory.length) return;
+    if (!confirm('Delete all saved conversations? This cannot be undone.')) return;
+    chatHistory = [];
+    saveHistory();
+    renderHistoryList();
   }
 
   function esc(s) {
